@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+    .chat-container {
+        width: calc(100% - 60px);
+        margin: 0 30px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        position: relative;
+    }
+
+    #chat-box {
+        height: 200px;
+        overflow-y: scroll;
+        margin-bottom: 10px;
+    }
+    #chat-box div {
+        margin-top: 15px;
+        clear: both;
+        overflow: auto;
+    }
+
+    .user {
+        color: navy;
+        float: left;
+    }
+
+    .bot {
+        color: black;
+        font-weight: bold;
+        float: right;
+    }
+
+    .system {
+        color: #888;
+    }
+
+    button {
+        display: block;
+        margin-top: 10px;
+    }
+    #user-input {
+        width:calc(100% - 60px);
+        height:30px;
+    }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div id="chat-box"></div>
+        <input type="text" id="user-input" placeholder="Type your message..." onkeydown="if(event.keyCode === 13) sendMessage();">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <script>
+    function sendMessage() {
+        var userInput = document.getElementById("user-input").value;
+        appendMessage("user", userInput);
+
+        // Clear input field
+        document.getElementById("user-input").value = '';
+
+        // Show "getting response..." message
+        var systemMessage = "Getting response...";
+        appendMessage("system", systemMessage);
+
+        // Make a POST request to request.php with user input
+        fetch('api.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: userInput })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Remove "getting response..." message
+            removeSystemMessage(systemMessage);
+
+            // Update chat box with bot response
+            appendMessage("bot", data.message);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            removeSystemMessage(systemMessage);
+            appendMessage("bot", "Error communicating with server");
+        });
+    }
+
+    function appendMessage(sender, message) {
+        var chatBox = document.getElementById("chat-box");
+        var messageElement = document.createElement("div");
+        messageElement.classList.add(sender);
+        messageElement.innerHTML = message;
+        chatBox.appendChild(messageElement);
+
+        // Scroll to bottom of chat box
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function removeSystemMessage(message) {
+        var chatBox = document.getElementById("chat-box");
+        var systemMessages = chatBox.getElementsByClassName("system");
+        for (var i = 0; i < systemMessages.length; i++) {
+            if (systemMessages[i].innerHTML === message) {
+                systemMessages[i].remove();
+                break;
+            }
+        }
+    }
+    </script>
+</body>
+</html>
