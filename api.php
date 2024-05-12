@@ -1,5 +1,7 @@
 <?php
-
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 // OpenAI API endpoint
 
 
@@ -9,7 +11,7 @@ function getOpenAIResponse($message) {
     // API endpoint
     $url = "https://api.openai.com/v1/chat/completions";
     // Your OpenAI API key
-    $apiKey = '[YOUR-API-KEY]';
+    $apiKey = '[API KEY]';
     // Request payload
     $data = array(
         "model" => "gpt-3.5-turbo",
