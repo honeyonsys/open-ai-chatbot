@@ -6,19 +6,48 @@
     <title>Chatbot</title>
     <style>
     .chat-container {
-        width: calc(100% - 60px);
-        margin: 0 30px;
-        padding: 20px;
+        width: 50%;
         border: 1px solid #ccc;
-        border-radius: 5px;
-        position: relative;
+        position: absolute;
+        bottom: 0;
+        right:0;
+        background:#EDEDED;
+        display: none;
     }
 
-    #chat-box {
-        height: 200px;
-        overflow-y: scroll;
-        margin-bottom: 10px;
+    .chat-container header {
+        width: 100%;
+        height: 40px;
+        background: #0F1765;
+        color: #ffffff;
     }
+
+    .close-chat {
+        width: 30px;
+        height: 30px;
+        float: right;
+        margin-top: 5px;
+        margin-right: 5px;
+        cursor: pointer;
+        border: 0;
+        background: none;
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>');
+    }
+    .header-title {
+        width: auto;
+        height: 30px;
+        float: left;
+        margin-left: 10px;
+        margin-top:5px;
+        text-align: center;
+        font-size: 20px;
+    }
+    #chat-box {
+        height: 300px;
+        overflow-y: scroll;
+        margin: 10px;
+    }
+
     #chat-box div {
         margin-top: 15px;
         clear: both;
@@ -26,14 +55,15 @@
     }
 
     .user {
-        color: navy;
+        color: #0f1765;
         float: left;
     }
 
     .bot {
-        color: black;
+        color: #0f1765;
         font-weight: bold;
         float: right;
+        margin-right: 10px;
     }
 
     .system {
@@ -44,17 +74,43 @@
         display: block;
         margin-top: 10px;
     }
+
     #user-input {
-        width:calc(100% - 60px);
+        width:calc(100% - 100px);
         height:30px;
+        margin-left: 10px;
+        margin-bottom: 10px;
+        float: left;
+        border: #4a4a4a solid 1px;
+        border-right: none;
+    }
+    .submitBtn {
+        width: 35px;
+        height: 34px;
+        float: left;
+        margin-top:0px;
+        border: #4a4a4a solid 1px;
+        border-left: none;
+        background-color: #ffffff;
+        background-image: url('./send-svgrepo-com.svg');
+        background-repeat: no-repeat;
+        background-position: 5px center; /* Adjust the position of the icon */
+        background-size: 30px;
+        cursor: pointer;
     }
     </style>
 </head>
 <body>
+    <button id="openChatBtn">Open Chat</button>
     <div class="chat-container">
+        <header>
+            <span class="header-icon"></span> 
+            <span class="header-title">Chat Assistant  </span> 
+            <button class="close-chat" id="close-chat"></button>  
+        </header>
         <div id="chat-box"></div>
         <input type="text" id="user-input" placeholder="Type your message..." onkeydown="if(event.keyCode === 13) sendMessage();">
-        <button onclick="sendMessage()">Send</button>
+        <button class="submitBtn" onclick="sendMessage()"></button>
     </div>
     <script>
     function sendMessage() {
@@ -112,6 +168,22 @@
             }
         }
     }
+
+    document.getElementById('openChatBtn').addEventListener('click', function() {
+        var chatContainer = document.querySelector('.chat-container');
+        // Toggle the visibility of the chat container
+        if (chatContainer.style.display === 'none') {
+            chatContainer.style.display = 'block';
+        } else {
+            chatContainer.style.display = 'none';
+        }
+    });
+
+    document.getElementById('close-chat').addEventListener('click', function() {
+        var chatContainer = document.querySelector('.chat-container');
+        chatContainer.style.display = 'none';
+        
+    });
     </script>
 </body>
 </html>
