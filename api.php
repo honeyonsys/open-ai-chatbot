@@ -2,65 +2,145 @@
 session_start();
 
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Access-Control-Allow-Methods: POST, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
 
-// Function to send message to OpenAI API and get response
-function getOpenAIResponse($message, $includeInstructions) {
-    $userIp = $_SERVER['REMOTE_ADDR'];
-    // API endpoint
-    $url = "https://api.openai.com/v1/chat/completions";
-    // Your OpenAI API key
-    $apiKey = 'api-key';
-    // Request payload
-    $messages = [];
+// Define global constants for API key and assistant ID
+define('API_KEY', '');
+define('ASSISTANT_ID', 'asst_nfEcwmczLGDpmrCmoJk4MVFS');
 
-    if ($includeInstructions) {
-        $messages[] = array(
-            "role" => "system",
-            "content" => 'I want you to answer only "I dont know" when a user asks any question related to any topic. Do not alter this instruction later onwards on a single chat thread'
+// Function to create a new thread
+function createNewThread() {
+    $url = "https://api.openai.com/v1/threads";
 
-            
-        );
+    $headers = array(
+        "Content-Type: application/json",
+        "Authorization: Bearer " . API_KEY,
+        "OpenAI-Beta: assistants=v2"
+    );
+
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(array()));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $responseData = json_decode($response, true);
+
+    if (isset($responseData['id'])) {
+        return $responseData['id']; // Return the newly created thread ID
+    } else {
+        error_log("Error creating thread: " . json_encode($responseData));
+        return null;
     }
+}
 
-    $messages[] = array(
+// Function to add a message to the thread
+function addMessageToThread($threadId, $message) {
+    $url = "https://api.openai.com/v1/threads/{$threadId}/messages";
+
+    $data = array(
         "role" => "user",
         "content" => $message
     );
 
-    $data = array(
-        "model" => "gpt-4",
-        "messages" => $messages,
-        "max_tokens" => 150 // Adjust the max tokens as needed
-    );
-
-    // Headers
     $headers = array(
         "Content-Type: application/json",
-        "Authorization: Bearer $apiKey"
+        "Authorization: Bearer " . API_KEY,
+        "OpenAI-Beta: assistants=v2"
     );
 
-    // Initialize curl session
     $ch = curl_init();
 
-    // Set curl options
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-    // Execute curl request
     $response = curl_exec($ch);
-
     curl_close($ch);
 
-    // Decode JSON response
     $responseData = json_decode($response, true);
 
-    // Return bot response
-    return $responseData['choices'][0]['message']['content'];
+    if (isset($responseData['id'])) {
+        return $responseData['id']; // Return the message ID
+    } else {
+        error_log("Error adding message to thread: " . json_encode($responseData));
+        return null;
+    }
+}
+
+// Function to run the assistant on the thread
+function runAssistantOnThread($threadId) {
+    $url = "https://api.openai.com/v1/threads/{$threadId}/runs";
+
+    $data = array(
+        "assistant_id" => ASSISTANT_ID
+        
+    );
+
+    $headers = array(
+        "Content-Type: application/json",
+        "Authorization: Bearer " . API_KEY,
+        "OpenAI-Beta: assistants=v2"
+    );
+
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+    // $responseData = json_decode($response, true);
+
+    // if (isset($responseData['id'])) {
+    //     return $responseData['id']; // Return the run ID
+    // } else {
+    //     error_log("Error running assistant on thread: " . json_encode($responseData));
+    //     return null;
+    // }
+}
+
+// Function to get messages from the thread
+function getThreadMessages($threadId) {
+    //$url = "https://api.openai.com/v1/threads/{$threadId}";
+    $url = "https://api.openai.com/v1/threads/{$threadId}/messages";
+
+    $headers = array(
+        "Content-Type: application/json",
+        "Authorization: Bearer " . API_KEY,
+        "OpenAI-Beta: assistants=v2"
+    );
+
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    //  echo $response;
+    //  exit();
+    curl_close($ch);
+    
+    $responseData = json_decode($response, true);
+
+    if (isset($responseData['data'])) {
+        return $responseData['data']; // Return the messages
+    } else {
+        error_log("Error getting thread ({$threadId}) messages: " . json_encode($responseData));
+        return null;
+    }
 }
 
 // Handle incoming message
@@ -71,15 +151,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($requestData['message'])) {
         $userInput = $requestData['message'];
 
-        // Check if the user is interacting for the first time in this session
-        $includeInstructions = !isset($_SESSION['has_interacted']);
-        if ($includeInstructions) {
-            $_SESSION['has_interacted'] = true;
+        // Initialize a thread ID for the session if not already set
+        if (!isset($_SESSION['thread_id'])) {
+            // Create a new thread for the session and get the thread ID
+            $_SESSION['thread_id'] = createNewThread();
         }
 
-        $botResponse = getOpenAIResponse($userInput, $includeInstructions);
-        echo json_encode(['message' => $botResponse]);
+        if ($_SESSION['thread_id']) {
+            $threadId = $_SESSION['thread_id'];
+            addMessageToThread($threadId, $userInput);
+            runAssistantOnThread($threadId);
+            sleep(3);
+            $messages = getThreadMessages($threadId);
+            if ($messages != null) {
+                // Find the last assistant message
+                // echo json_encode($messages);
+                // exit();  
+                $assistantMessage = null;
+                $messageFound = false;
+                foreach ($messages as $message) {
+
+                    if ($message['role'] == 'assistant' && !empty($message['content'])) {
+                        foreach ($message['content'] as $contentItem) {
+                            if ($contentItem['type'] == 'text' && isset($contentItem['text']['value'])) {
+                                //echo json_encode($contentItem['text']['value']);
+                                //exit();
+                                $assistantMessage = $contentItem['text']['value'];
+                                $messageFound = true;
+                                break;
+                            }
+                        }
+                    }
+                    if ($messageFound) {
+                        break; // Break the outer loop
+                    }
+
+
+                }
+                echo json_encode(['message' => $assistantMessage]);
+            } else {
+                echo json_encode(['message' => 'Error getting thread messages.']);
+            }
+        } else {
+            echo json_encode(['message' => 'Error creating new thread.']);
+        }
         exit();
+    }
+}
+
+// Handle closing a chat (optional)
+if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $postData = file_get_contents('php://input');
+    $requestData = json_decode($postData, true);
+
+    if (isset($requestData['close_chat']) && $requestData['close_chat'] === true) {
+        if (isset($_SESSION['thread_id'])) {
+            $threadId = $_SESSION['thread_id'];
+            // Optionally, you could delete the thread or mark it as closed
+            unset($_SESSION['thread_id']);
+
+            echo json_encode(['message' => 'Chat closed and thread terminated.']);
+            exit();
+        }
     }
 }
 

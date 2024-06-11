@@ -13,7 +13,7 @@
         align-items: center;
         justify-content: center;
         flex-direction: column;
-        background-color: #f8f8f8;
+        background-color: #EDEDED;
     }
 
     .chat-container {
@@ -57,6 +57,7 @@
         overflow-y: auto;
         margin: 10px;
         padding-bottom: 50px;
+        
     }
 
     #chat-box div {
@@ -118,11 +119,32 @@
     }
 
     #initial-query-input {
+        
         width: 50%;
         height: 40px;
         font-size: 16px;
         padding: 0 10px;
+        /*
         box-sizing: border-box;
+        */
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        
+        border: #fff solid 1px;
+        border-radius: 10px;
+        border-bottom-left-radius: 0px;
+        border-style: solid;
+        box-sizing: border-box!important;
+        margin: 0;
+        text-overflow: ellipsis;
+        
+
+    }
+    #initial-query-input:hover {
+        box-shadow: #000 0px 0px 5px;
+    }
+    #initial-query-input:focus {
+        border: #fff solid 1px;
     }
 
     @media (max-width: 768px) {
@@ -187,12 +209,17 @@
         var chatBox = document.getElementById("chat-box");
         var messageElement = document.createElement("div");
         messageElement.classList.add(sender);
-        messageElement.innerHTML = message;
+        
+        // Replace \n with <br> tags
+        var formattedMessage = message.replace(/\n/g, "<br>");
+        messageElement.innerHTML = formattedMessage;
+        
         chatBox.appendChild(messageElement);
 
         // Scroll to bottom of chat box
         chatBox.scrollTop = chatBox.scrollHeight;
     }
+
 
     function removeSystemMessage(message) {
         var chatBox = document.getElementById("chat-box");
@@ -216,9 +243,26 @@
             // Open chat and send the initial query
             var chatContainer = document.querySelector('.chat-container');
             chatContainer.style.display = 'block';
+
+            // Append and send the initial query without setting user-input value
             appendMessage("user", initialQuery);
-            document.getElementById("user-input").value = initialQuery;
-            sendMessage();
+
+            // Use fetch directly to send initial query to avoid duplication
+            fetch('api.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: initialQuery })
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendMessage("bot", data.message);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                appendMessage("bot", "Error communicating with server");
+            });
         }
     });
 
@@ -233,6 +277,22 @@
 
         // Automatically focus the input field
         inputField.focus();
+
+        // Make a DELETE request to api.php to close the chat
+        fetch('api.php', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ close_chat: true })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Chat closed:', data.message);
+        })
+        .catch(error => {
+            console.error('Error closing chat:', error);
+        });
     });
     </script>
 </body>
