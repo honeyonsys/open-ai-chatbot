@@ -69,14 +69,31 @@
     .user {
         color: #0f1765;
         float: left;
+        position: relative;
+        padding-left: 50px; /* Adjust the padding based on your content */
+    }
+
+    .user::before {
+        content: "User: ";
+        font-weight: bold; /* Optional: make the prefix bold */
+        position: absolute;
+        left: 0;
     }
 
     .bot {
         color: #0f1765;
-        font-weight: bold;
-        float: right;
-        margin-right: 10px;
+        float: left;
+        position: relative;
+        padding-left: 90px; /* Adjust the padding based on your content */
     }
+
+    .bot::before {
+        content: "CarerCard: ";
+        font-weight: bold; /* Optional: make the prefix bold */
+        position: absolute;
+        left: 0;
+    }
+
 
     .system {
         color: #888;
@@ -179,7 +196,7 @@
         document.getElementById("user-input").value = '';
 
         // Show "getting response..." message
-        var systemMessage = "Getting response...";
+        var systemMessage = "<img src='.//load-38_128.gif' width='50'>";
         appendMessage("system", systemMessage);
 
         // Make a POST request to request.php with user input
@@ -224,12 +241,14 @@
     function removeSystemMessage(message) {
         var chatBox = document.getElementById("chat-box");
         var systemMessages = chatBox.getElementsByClassName("system");
+        systemMessages[systemMessages.length - 1].remove();
+        /*
         for (var i = 0; i < systemMessages.length; i++) {
             if (systemMessages[i].innerHTML === message) {
                 systemMessages[i].remove();
                 break;
             }
-        }
+        }*/
     }
 
     document.getElementById('initial-query-input').addEventListener('keydown', function(event) {
